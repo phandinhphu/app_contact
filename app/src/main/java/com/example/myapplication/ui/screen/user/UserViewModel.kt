@@ -4,10 +4,13 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.lifecycle.*
 import com.example.myapplication.domain.model.User
 import com.example.myapplication.domain.usecase.user.*
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class UserViewModel(
+@HiltViewModel
+class UserViewModel @Inject constructor(
     private val getUsersUseCase: GetUsersUseCase,
     private val addUserUseCase: AddUserUseCase,
     private val updateUserUseCase: UpdateUserUseCase,
@@ -16,19 +19,25 @@ class UserViewModel(
     private val validatePhoneNumberUseCase: ValidatePhoneNumberUseCase
 ) : ViewModel() {
     private val _uiEvent = MutableSharedFlow<String>(replay = 0)
+    private val _users = MutableStateFlow<List<User>>(emptyList())
     private val _searchResult = MutableStateFlow<List<User>>(emptyList())
 
     val uiEvent = _uiEvent.asSharedFlow()
-    val users = mutableStateListOf<User>()
-    val searchResult: StateFlow<List<User>> = _searchResult
+    val users: StateFlow<List<User>> = _users.asStateFlow()
+    val searchResult: StateFlow<List<User>> = _searchResult.asStateFlow()
 
     init {
-        users.addAll(getUsersUseCase())
-        _searchResult.value = users
+        loadUsers()
+    }
+
+    fun loadUsers() {
+        val data = getUsersUseCase()
+        _users.value = data
+        _searchResult.value = data
     }
 
     fun addUser(name: String, phone: String) {
-        val id = (users.maxOfOrNull { it.id } ?: 0) + 1
+        val id = (_users.value.maxOfOrNull { it.id } ?: 0) + 1
 
         val nameResult = validateUserNameUseCase(name)
         val phoneResult = validatePhoneNumberUseCase(phone)
@@ -48,9 +57,8 @@ class UserViewModel(
         }
 
         val user = User(id, name, phone)
-        users.add(user)
         addUserUseCase(user)
-        _searchResult.value = users.toList()
+        loadUsers()
 
         viewModelScope.launch {
             _uiEvent.emit("Thêm thành công")
@@ -77,11 +85,7 @@ class UserViewModel(
         }
 
         updateUserUseCase(user)
-        val index = users.indexOfFirst { it.id == user.id }
-        if (index != -1) {
-            users[index] = user
-        }
-        _searchResult.value = users.toList()
+        loadUsers()
 
         viewModelScope.launch {
             _uiEvent.emit("Sửa thành công")
@@ -90,8 +94,7 @@ class UserViewModel(
 
     fun deleteUser(user: User) {
         deleteUserUseCase(user)
-        users.remove(user)
-        _searchResult.value = users.toList()
+        loadUsers()
 
         viewModelScope.launch {
             _uiEvent.emit("Xóa thành công")
@@ -100,10 +103,11 @@ class UserViewModel(
 
     fun searchUsers(query: String) {
         viewModelScope.launch {
+            val currentUsers = _users.value
             _searchResult.value = if (query.isBlank()) {
-                users.toList() // nếu query rỗng → trả toàn bộ
+                currentUsers
             } else {
-                users.filter {
+                currentUsers.filter {
                     it.name.contains(query, ignoreCase = true) ||
                             it.phone.contains(query)
                 }
@@ -112,6 +116,8 @@ class UserViewModel(
     }
 
     fun getUserById(id: Int?): User? {
-        return id?.let { users.find { it.id == id } }
+        return id?.let { userId ->
+            _users.value.find { it.id == userId }
+        }
     }
 }

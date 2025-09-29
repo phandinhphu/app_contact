@@ -1,6 +1,8 @@
 package com.example.myapplication.domain.usecase.user
 
-class ValidateUserNameUseCase {
+import javax.inject.Inject
+
+class ValidateUserNameUseCase @Inject constructor() {
     operator fun invoke(name: String): ValidationResult {
         if (name.isBlank()) {
             return ValidationResult(false, "Tên không được để trống")
@@ -12,7 +14,7 @@ class ValidateUserNameUseCase {
     }
 }
 
-class ValidatePhoneNumberUseCase {
+class ValidatePhoneNumberUseCase @Inject constructor() {
     operator fun invoke(phone: String): ValidationResult {
         val regex = Regex("^\\d{10}$")
         if (!regex.matches(phone)) {

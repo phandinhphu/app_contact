@@ -1,5 +1,6 @@
 package com.example.myapplication.ui.screen.user
 
+import android.app.Activity
 import android.content.Context
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
@@ -11,17 +12,20 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.example.myapplication.domain.model.User
 import com.example.myapplication.util.PhoneUtils
+import com.example.myapplication.util.SmsUtils
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UserDetailScreen(
     user: User,
-    userViewModel: UserViewModel,
     context: Context,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    userViewModel: UserViewModel
 ) {
     var editableUser by remember { mutableStateOf(user) }
     var showDeleteConfirmDialog by remember { mutableStateOf<User?>(null) }
+    var showSmsDialog by remember { mutableStateOf(false) }
+    var smsContent by remember { mutableStateOf("") }
 
     Scaffold(
         topBar = {
@@ -76,6 +80,14 @@ fun UserDetailScreen(
 
                 Spacer(modifier = Modifier.width(8.dp))
 
+                Button(onClick = {
+                    showSmsDialog = true
+                }) {
+                    Text("SMS")
+                }
+
+                Spacer(modifier = Modifier.width(8.dp))
+
                 Button(
                     colors = ButtonDefaults.buttonColors(containerColor = Color.Red),
                     onClick = {
@@ -108,6 +120,38 @@ fun UserDetailScreen(
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteConfirmDialog = null }) {
+                    Text("Hủy")
+                }
+            }
+        )
+    }
+
+    if (showSmsDialog) {
+        AlertDialog(
+            onDismissRequest = { showSmsDialog = false },
+            title = { Text("Gửi SMS") },
+            text = {
+                OutlinedTextField(
+                    value = smsContent,
+                    onValueChange = { smsContent = it },
+                    label = { Text("Nội dung tin nhắn") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    val activity = context as? Activity
+                    activity?.let {
+                        SmsUtils.sendSms(it, editableUser.phone, smsContent)
+                    }
+                    showSmsDialog = false
+                    smsContent = "" // reset
+                }) {
+                    Text("Gửi")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showSmsDialog = false }) {
                     Text("Hủy")
                 }
             }

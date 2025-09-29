@@ -2,8 +2,9 @@ package com.example.myapplication.data.repository
 
 import com.example.myapplication.domain.model.User
 import com.example.myapplication.domain.repository.UserRepository
+import javax.inject.Inject
 
-class UserRepositoryImpl : UserRepository {
+class UserRepositoryImpl @Inject constructor() : UserRepository {
     private val users = mutableListOf<User>()
 
     override fun getUsers(): List<User> {
