@@ -1,41 +1,42 @@
 package com.example.myapplication.data.repository
 
+import com.example.myapplication.data.local.dao.UserDao
+import com.example.myapplication.data.mapper.toDomain
+import com.example.myapplication.data.mapper.toEntity
 import com.example.myapplication.domain.model.User
 import com.example.myapplication.domain.repository.UserRepository
+import kotlinx.coroutines.flow.*
 import javax.inject.Inject
 
-class UserRepositoryImpl @Inject constructor() : UserRepository {
-    private val users = mutableListOf<User>()
+class UserRepositoryImpl @Inject constructor(
+    private val userDao: UserDao
+) : UserRepository {
 
-    override fun getUsers(): List<User> {
-        return users
-    }
-
-    override fun getUserById(id: Int): User? {
-        return users.find { it.id == id }
-    }
-
-    override fun addUser(user: User) {
-        users.add(user)
-    }
-
-    override fun updateUser(user: User) {
-        val index = users.indexOfFirst { it.id == user.id }
-        if (index != -1) {
-            users[index] = user
+    override fun getUsers(): Flow<List<User>> {
+        return userDao.getAllUsers().map { list ->
+            list.map { it.toDomain() }
         }
     }
 
-    override fun deleteUser(user: User) {
-        users.remove(user)
+    override suspend fun getUserById(id: Int): User? {
+        return userDao.getUserById(id)?.toDomain()
     }
 
-    override fun searchUsers(query: String): List<User> {
-        if (query.isBlank()) {
-            return users
-        }
+    override suspend fun addUser(user: User) {
+        userDao.insertUser(user.toEntity())
+    }
 
-        return users.filter { it.name.contains(query, ignoreCase = true)
-                || it.phone.contains(query, ignoreCase = true)}
+    override suspend fun updateUser(user: User) {
+        userDao.updateUser(user.toEntity())
+    }
+
+    override suspend fun deleteUser(user: User) {
+        userDao.deleteUser(user.toEntity())
+    }
+
+    override fun searchUsers(query: String): Flow<List<User>> {
+        return userDao.searchUsers(query).map { list ->
+            list.map { it.toDomain() }
+        }
     }
 }

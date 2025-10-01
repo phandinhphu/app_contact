@@ -55,16 +55,13 @@ class MainActivity : ComponentActivity() {
                     val userViewModel: UserViewModel =
                         hiltViewModel(navController.getBackStackEntry(Routes.UserList.route))
                     val userId = backStackEntry.arguments?.getString("userId")?.toIntOrNull()
-                    val user = userViewModel.getUserById(userId)
 
-                    if (user != null) {
-                        UserDetailScreen(
-                            user = user,
-                            context = LocalContext.current,
-                            onBack = { navController.popBackStack() },
-                            userViewModel = userViewModel
-                        )
-                    }
+                    UserDetailScreen(
+                        userId = userId,
+                        context = LocalContext.current,
+                        onBack = { navController.popBackStack() },
+                        userViewModel = userViewModel
+                    )
                 }
             }
         }

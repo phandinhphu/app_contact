@@ -1,6 +1,5 @@
 package com.example.myapplication.ui.screen.user
 
-import androidx.compose.runtime.mutableStateListOf
 import androidx.lifecycle.*
 import com.example.myapplication.domain.model.User
 import com.example.myapplication.domain.usecase.user.*
@@ -12,6 +11,8 @@ import javax.inject.Inject
 @HiltViewModel
 class UserViewModel @Inject constructor(
     private val getUsersUseCase: GetUsersUseCase,
+    private val getUserByIdUserCase: GetUserByIdUserCase,
+    private val searchUsersUseCase: SearchUsersUserCase,
     private val addUserUseCase: AddUserUseCase,
     private val updateUserUseCase: UpdateUserUseCase,
     private val deleteUserUseCase: DeleteUserUseCase,
@@ -20,11 +21,13 @@ class UserViewModel @Inject constructor(
 ) : ViewModel() {
     private val _uiEvent = MutableSharedFlow<String>(replay = 0)
     private val _users = MutableStateFlow<List<User>>(emptyList())
-    private val _searchResult = MutableStateFlow<List<User>>(emptyList())
+    private val _user = MutableStateFlow<User?>(null)
+    private val _userUiState = MutableStateFlow<UserUiState>(UserUiState.Loading)
 
     val uiEvent = _uiEvent.asSharedFlow()
     val users: StateFlow<List<User>> = _users.asStateFlow()
-    val searchResult: StateFlow<List<User>> = _searchResult.asStateFlow()
+    val user: StateFlow<User?> = _user.asStateFlow()
+    val userUiState: StateFlow<UserUiState> = _userUiState.asStateFlow()
 
     init {
         loadUsers()
@@ -32,13 +35,14 @@ class UserViewModel @Inject constructor(
 
     fun loadUsers() {
         val data = getUsersUseCase()
-        _users.value = data
-        _searchResult.value = data
+        viewModelScope.launch {
+            data.collect {
+                _users.value = it
+            }
+        }
     }
 
     fun addUser(name: String, phone: String) {
-        val id = (_users.value.maxOfOrNull { it.id } ?: 0) + 1
-
         val nameResult = validateUserNameUseCase(name)
         val phoneResult = validatePhoneNumberUseCase(phone)
 
@@ -56,11 +60,11 @@ class UserViewModel @Inject constructor(
             return
         }
 
-        val user = User(id, name, phone)
-        addUserUseCase(user)
-        loadUsers()
-
         viewModelScope.launch {
+            val user = User(name = name,phone = phone)
+            addUserUseCase(user)
+            loadUsers()
+
             _uiEvent.emit("Thêm thành công")
         }
     }
@@ -84,40 +88,45 @@ class UserViewModel @Inject constructor(
             return
         }
 
-        updateUserUseCase(user)
-        loadUsers()
-
         viewModelScope.launch {
+            updateUserUseCase(user)
+            loadUsers()
+
             _uiEvent.emit("Sửa thành công")
         }
     }
 
     fun deleteUser(user: User) {
-        deleteUserUseCase(user)
-        loadUsers()
-
         viewModelScope.launch {
+            deleteUserUseCase(user)
+            loadUsers()
+
             _uiEvent.emit("Xóa thành công")
         }
     }
 
     fun searchUsers(query: String) {
         viewModelScope.launch {
-            val currentUsers = _users.value
-            _searchResult.value = if (query.isBlank()) {
-                currentUsers
-            } else {
-                currentUsers.filter {
-                    it.name.contains(query, ignoreCase = true) ||
-                            it.phone.contains(query)
-                }
+            searchUsersUseCase(query).collect {
+                _users.value = it
             }
         }
     }
 
-    fun getUserById(id: Int?): User? {
-        return id?.let { userId ->
-            _users.value.find { it.id == userId }
+    fun getUserById(id: Int?) {
+        viewModelScope.launch {
+            val user = getUserByIdUserCase(id ?: 0)
+            _userUiState.value = if (user != null) {
+                UserUiState.Success(user)
+            } else {
+                UserUiState.Error("Không tìm thấy người dùng")
+            }
         }
     }
+}
+
+sealed class UserUiState {
+    object Loading : UserUiState()
+    data class Success(val user: User) : UserUiState()
+    data class Error(val message: String) : UserUiState()
 }

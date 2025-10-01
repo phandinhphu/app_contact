@@ -30,7 +30,7 @@ import com.example.myapplication.routes.Routes
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UserListScreen(onAddClick: () -> Unit, navController: NavHostController, userViewModel: UserViewModel) {
-    val searchResult by userViewModel.searchResult.collectAsState()
+    val users by userViewModel.users.collectAsState()
     var query by remember { mutableStateOf("") }
     var searchActive by remember { mutableStateOf(false) }
     val focusRequester = remember { FocusRequester() }
@@ -141,7 +141,7 @@ fun UserListScreen(onAddClick: () -> Unit, navController: NavHostController, use
                 .padding(8.dp)
                 .fillMaxSize()
         ) {
-            items(searchResult) { user ->
+            items(users) { user ->
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()

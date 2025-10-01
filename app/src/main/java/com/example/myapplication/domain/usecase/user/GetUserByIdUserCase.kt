@@ -4,6 +4,6 @@ import com.example.myapplication.domain.model.User
 import com.example.myapplication.domain.repository.UserRepository
 import kotlinx.coroutines.flow.Flow
 
-class GetUsersUseCase (private val userRepository: UserRepository) {
-    operator fun invoke(): Flow<List<User>> = userRepository.getUsers()
+class GetUserByIdUserCase (private val userRepository: UserRepository) {
+    suspend operator fun invoke(id: Int): User? = userRepository.getUserById(id)
 }

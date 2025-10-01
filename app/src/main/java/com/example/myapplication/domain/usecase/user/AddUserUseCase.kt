@@ -4,5 +4,5 @@ import com.example.myapplication.domain.model.User
 import com.example.myapplication.domain.repository.UserRepository
 
 class AddUserUseCase (private val userRepository: UserRepository) {
-    operator fun invoke(user: User) = userRepository.addUser(user)
+    suspend operator fun invoke(user: User) = userRepository.addUser(user)
 }
