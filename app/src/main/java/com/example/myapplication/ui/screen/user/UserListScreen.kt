@@ -1,5 +1,8 @@
 package com.example.myapplication.ui.screen.user
 
+import android.app.Activity
+import android.content.Intent
+import android.speech.RecognizerIntent
 import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -19,6 +22,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.unit.dp
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.navigation.NavHostController
 import com.example.myapplication.routes.Routes
 
@@ -32,6 +37,26 @@ fun UserListScreen(onAddClick: () -> Unit, navController: NavHostController, use
     val keyboardController = LocalSoftwareKeyboardController.current
 
     val context = LocalContext.current
+
+    val recognizerIntent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+        putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+        putExtra(RecognizerIntent.EXTRA_LANGUAGE, "vi-VN") // ngôn ngữ tiếng Việt
+    }
+
+    val speechLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            val spokenText = result.data
+                ?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
+                ?.firstOrNull()
+
+            spokenText?.let {
+                query = it
+                userViewModel.searchUsers(it)
+            }
+        }
+    }
 
     // Lắng nghe sự kiện từ ViewModel
     LaunchedEffect(key1 = true) {
@@ -72,13 +97,21 @@ fun UserListScreen(onAddClick: () -> Unit, navController: NavHostController, use
                         )
                     },
                     navigationIcon = {
-                        IconButton(onClick = {
-                            searchActive = false
-                            query = ""
-                            userViewModel.searchUsers("")
-                            keyboardController?.hide() // Ẩn bàn phím
-                        }) {
-                            Icon(Icons.Default.Close, contentDescription = "Đóng tìm kiếm")
+                        Row {
+                            IconButton(onClick = {
+                                searchActive = false
+                                query = ""
+                                userViewModel.searchUsers("")
+                                keyboardController?.hide()
+                            }) {
+                                Icon(Icons.Default.Close, contentDescription = "Đóng tìm kiếm")
+                            }
+
+                            IconButton(onClick = {
+                                speechLauncher.launch(recognizerIntent)
+                            }) {
+                                Icon(Icons.Default.Mic, contentDescription = "Voice Search")
+                            }
                         }
                     }
                 )

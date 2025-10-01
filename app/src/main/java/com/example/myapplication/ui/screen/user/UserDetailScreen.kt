@@ -5,6 +5,10 @@ import android.content.Context
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Phone
+import androidx.compose.material.icons.filled.Sms
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -67,7 +71,7 @@ fun UserDetailScreen(
                     userViewModel.updateUser(editableUser)
                     onBack()
                 }) {
-                    Text("Sửa")
+                    Icon(Icons.Default.Edit, contentDescription = "Lưu")
                 }
 
                 Spacer(modifier = Modifier.width(8.dp))
@@ -75,7 +79,7 @@ fun UserDetailScreen(
                 Button(onClick = {
                     PhoneUtils.makePhoneCall(context, editableUser.phone)
                 }) {
-                    Text("Gọi")
+                    Icon(Icons.Default.Phone, contentDescription = "Gọi điện")
                 }
 
                 Spacer(modifier = Modifier.width(8.dp))
@@ -83,7 +87,7 @@ fun UserDetailScreen(
                 Button(onClick = {
                     showSmsDialog = true
                 }) {
-                    Text("SMS")
+                    Icon(Icons.Default.Sms, contentDescription = "Gửi Sms")
                 }
 
                 Spacer(modifier = Modifier.width(8.dp))
@@ -94,7 +98,7 @@ fun UserDetailScreen(
                         showDeleteConfirmDialog = editableUser
                     }
                 ) {
-                    Text("Xóa")
+                    Icon(Icons.Default.Delete, contentDescription = "Xóa")
                 }
             }
         }
